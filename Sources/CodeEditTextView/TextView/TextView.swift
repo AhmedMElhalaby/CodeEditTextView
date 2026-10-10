@@ -352,7 +352,9 @@ open class TextView: NSView, NSTextContent {
 
         _undoManager = CEUndoManager(textView: self)
 
-        layoutManager.layoutLines()
+        // Before a scroll view exists `visibleRect` is the whole document, so an unbounded pass lays out every line
+        // (a 50k-line file took ~48 s to open). Lay out one screenful; the first real layout pass takes over.
+        layoutManager.layoutLines(in: NSRect(origin: .zero, size: NSScreen.main?.frame.size ?? NSSize(width: 1920, height: 1080)))
         setUpDragGesture()
     }
 

@@ -259,7 +259,10 @@ public final class EmphasisManager {
     }
 
     private func createTextLayer(for emphasis: Emphasis) -> CATextLayer? {
-        guard let textView = textView,
+        // Only a filled highlight covers the text and so redraws it on top; an underline or outline leaves the
+        // text visible, and a second copy drawn over it (in black, offset a pixel) doubles every glyph.
+        guard emphasis.style == .standard,
+              let textView = textView,
               let layoutManager = textView.layoutManager,
               let shapePath = layoutManager.roundedPathForRange(emphasis.range),
               let originalString = textView.textStorage?.attributedSubstring(from: emphasis.range) else {

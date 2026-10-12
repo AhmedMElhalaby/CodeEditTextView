@@ -48,6 +48,16 @@ struct TextLayoutManagerTests {
         layoutManager = try #require(textView.layoutManager)
     }
 
+    /// An emphasis range that outlived an edit (the text got shorter) must not reach
+    /// `rangeOfComposedCharacterSequence(at:)` past the end: that raises inside drawing (Ainkrad Forge E0).
+    @Test
+    func rectsForARangePastTheEndAreClamped() {
+        textView.layout()
+        #expect(layoutManager.rectsFor(range: NSRange(location: 7, length: 5)).isEmpty)  // starts at the end
+        #expect(layoutManager.rectsFor(range: NSRange(location: 40, length: 3)).isEmpty)  // wholly past it
+        #expect(!layoutManager.rectsFor(range: NSRange(location: 6, length: 30)).isEmpty)  // "D", then past the end
+    }
+
     @Test(
         arguments: [
             ("\nE", NSRange(location: 6, length: 0), 5),

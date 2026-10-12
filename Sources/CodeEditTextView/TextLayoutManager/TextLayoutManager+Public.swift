@@ -212,6 +212,11 @@ extension TextLayoutManager {
     ///   - line: The line to calculate rects for.
     /// - Returns: Multiple bounding rects. Will return one rect for each line fragment that overlaps the given range.
     public func rectsFor(range: NSRange) -> [CGRect] {
+        // Clamp to the text: an emphasis or marker range can outlive an edit that shortened the document, and
+        // `rangeOfComposedCharacterSequence(at:)` raises on an index at or past the end — an uncaught exception
+        // inside drawing that takes the whole app down (Ainkrad Forge E0).
+        guard let range = range.intersection(NSRange(location: 0, length: textStorage?.length ?? 0)), range.length > 0
+        else { return [] }
         return linesInRange(range).flatMap { self.rectsFor(range: range, in: $0) }
     }
 

@@ -249,8 +249,12 @@ extension TextLayoutManager {
 
         var rects: [CGRect] = []
         for fragmentPosition in line.data.lineFragments.linesInRange(relativeRange) {
+            // `characterRect` takes offsets within the fragment, not the line (Forge FD64: rows after the first).
             guard let intersectingRange = fragmentPosition.range.intersection(relativeRange) else { continue }
-            let fragmentRect = characterRect(in: fragmentPosition.data, for: intersectingRange)
+            let fragmentRect = characterRect(
+                in: fragmentPosition.data,
+                for: intersectingRange.translate(location: -fragmentPosition.range.location)
+            )
             guard fragmentRect.width > 0 else { continue }
             rects.append(
                 CGRect(
@@ -338,7 +342,7 @@ extension TextLayoutManager {
     /// Finds the x position of the offset in the string the fragment represents.
     /// - Parameters:
     ///   - lineFragment: The line fragment to calculate for.
-    ///   - offset: The offset, relative to the start of the *line*.
+    ///   - offset: The offset, relative to the start of the *fragment*.
     /// - Returns: The x position of the character in the drawn line, from the left.
     public func characterXPosition(in lineFragment: LineFragment, for offset: Int) -> CGFloat {
         renderDelegate?.characterXPosition(in: lineFragment, for: offset) ?? lineFragment._xPos(for: offset)

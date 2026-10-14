@@ -90,7 +90,12 @@ extension TextLayoutManager {
         } else if fragment.width <= point.x - edgeInsets.left {
             return findOffsetAfterEndOf(fragmentPosition: fragmentPosition, in: linePosition)
         } else {
-            return findOffsetAtPoint(inFragment: fragment, xPos: point.x, inLine: linePosition)
+            return findOffsetAtPoint(
+                inFragment: fragment,
+                at: fragmentPosition.range.location,
+                xPos: point.x,
+                inLine: linePosition
+            )
         }
     }
 
@@ -134,12 +139,14 @@ extension TextLayoutManager {
     /// Finds a document offset for a point that lies in a line fragment.
     /// - Parameters:
     ///   - fragment: The fragment the point lies in.
+    ///   - fragmentLocation: Where the fragment starts, relative to its line.
     ///   - xPos: The point being queried, relative to the text view.
     ///   - linePosition: The position that contains the `fragment`.
     /// - Returns: The offset (relative to the document) that's closest to the given point, or `nil` if it could not be
     ///            found.
     func findOffsetAtPoint(
         inFragment fragment: LineFragment,
+        at fragmentLocation: Int,
         xPos: CGFloat,
         inLine linePosition: TextLineStorage<TextLine>.TextLinePosition
     ) -> Int? {
@@ -152,7 +159,9 @@ extension TextLayoutManager {
                 ctLine,
                 CGPoint(x: xPos - edgeInsets.left - contentPosition.xPos, y: fragment.height/2)
             )
-            return fragmentIndex + contentPosition.offset + linePosition.range.location
+            // The CTLine indexes its typesetter's string, not this content: take the index within the content.
+            let indexInContent = fragmentIndex - CTLineGetStringRange(ctLine).location
+            return linePosition.range.location + fragmentLocation + contentPosition.offset + indexInContent
         case .attachment:
             return contentPosition.offset + linePosition.range.location
         }

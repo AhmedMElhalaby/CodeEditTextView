@@ -134,9 +134,14 @@ public final class LineFragmentRenderer {
     }
 
     private func createTextRange(for drawingContext: InvisibleDrawingContext) -> NSRange {
+        // Only this content's characters: a fragment may hold several (a long line is cut into pieces).
+        let start = drawingContext.lineFragment.documentRange.location + drawingContext.contentOffset
         return NSRange(
-            start: drawingContext.lineFragment.documentRange.location + drawingContext.contentOffset,
-            end: drawingContext.lineFragment.documentRange.max
+            start: start,
+            end: min(
+                drawingContext.lineFragment.documentRange.max,
+                start + CTLineGetStringRange(drawingContext.ctLine).length
+            )
         )
     }
 

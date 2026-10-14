@@ -26,6 +26,11 @@ final public class Typesetter {
         }
     }
 
+    /// The widest a single `CTLine` may be. CoreGraphics silently drops a glyph run wider than 65,536 device
+    /// pixels with some TrueType faces (Courier New, JetBrains Mono), so a long line is laid out in pieces no
+    /// wider than this (8,192 pt is 65,536 px at 8x).
+    static let maxContentWidth: CGFloat = 8_192
+
     public var documentRange: NSRange?
     public var lineFragments = TextLineStorage<LineFragment>()
 
@@ -171,17 +176,21 @@ final public class Typesetter {
 
         // Layout as many fragments as possible in this content run
         while context.currentPosition < range.max {
+            let start = context.currentPosition - range.location
+            let availableWidth = displayData.maxWidth - context.fragmentContext.width
+            // Room past the cap: this piece ends at the cap, mid-fragment, on a cluster (not a word) boundary.
+            let isPiece = availableWidth > Self.maxContentWidth
             // The line break indicates the distance from the range we’re typesetting on that should be broken at.
             // It's relative to the range being typeset, not the line
             let lineBreak = typesetter.suggestLineBreak(
                 using: substring,
-                strategy: displayData.breakStrategy,
-                subrange: NSRange(start: context.currentPosition - range.location, end: range.length),
-                constrainingWidth: displayData.maxWidth - context.fragmentContext.width
+                strategy: isPiece ? .character : displayData.breakStrategy,
+                subrange: NSRange(start: start, end: range.length),
+                constrainingWidth: min(availableWidth, Self.maxContentWidth)
             )
 
             // Indicates the subrange on the range that the typesetter knows about. This may not be the entire line
-            let typesetSubrange = NSRange(location: context.currentPosition - range.location, length: lineBreak)
+            let typesetSubrange = NSRange(start: start, end: lineBreak)
             let typesetData = typesetLine(typesetter: typesetter, range: typesetSubrange)
 
             // The typesetter won't tell us if 0 characters can fit in the constrained space. This checks to
@@ -195,7 +204,7 @@ final public class Typesetter {
             context.appendText(typesettingRange: range, lineBreak: lineBreak, typesetData: typesetData)
 
             // If this isn't the end of the line, we should break so we pop the context and start a new fragment.
-            if context.currentPosition != range.max {
+            if context.currentPosition != range.max && !isPiece {
                 context.popCurrentData()
             }
         }

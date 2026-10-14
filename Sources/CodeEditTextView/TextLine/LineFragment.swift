@@ -82,7 +82,7 @@ public final class LineFragment: Identifiable, Equatable {
     /// Underscored, because although this needs to be accessible outside this class, the relevant layout manager method
     /// should be used.
     ///
-    /// - Parameter offset: The offset, relative to the start of the *line*.
+    /// - Parameter offset: The offset, relative to the start of the *fragment*.
     /// - Returns: The x position of the character in the drawn line, from the left.
     func _xPos(for offset: Int) -> CGFloat {
         guard let (content, position) = findContent(at: offset) else {
